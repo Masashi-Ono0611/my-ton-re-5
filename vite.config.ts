@@ -6,7 +6,13 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills()
+    nodePolyfills({
+      globals: {
+        Buffer: true,
+        global: true,
+        process: true
+      }
+    })
   ],
   build: {
     outDir: 'docs'
@@ -16,6 +22,11 @@ export default defineConfig({
     fs: {
       allow: ['./', '../'],
     },
-    host: true
+    host: true,
+    allowedHosts: [
+      'localhost',
+      '.ngrok-free.app',
+      '*.ngrok-free.app'
+    ]
   }
 })
