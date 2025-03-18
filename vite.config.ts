@@ -6,9 +6,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills({
-      include: ['crypto', 'stream', 'buffer']
-    })
+    nodePolyfills()
   ],
   base: '/my-ton-re-5/',
   server: {
