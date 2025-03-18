@@ -81,9 +81,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills({
-      include: ['crypto', 'stream', 'buffer']
-    })
+    nodePolyfills()
   ],
   base: './',
   server: {
@@ -237,7 +235,7 @@ try {
 {
   "dependencies": {
     "@orbs-network/ton-access": "^2.3.3",
-    "@tonconnect/ui-react": "^1.0.0-beta.9",
+    "@tonconnect/ui-react": "^2.0.11",
     "ton": "^13.5.0",
     "ton-core": "^0.49.1",
     "ton-crypto": "^3.2.0"
@@ -250,15 +248,375 @@ try {
 npm run dev -- --host
 ```
 
-### 注意点
-1. ポート番号の確認
-   - デフォルト: 5173
-   - 使用中の場合: 5174などの別ポートを使用
+# GitHub Pagesへのデプロイ手順
 
-2. マニフェストURLの設定
-   - 開発時は公式の外部マニフェストURLを使用することを推奨
-   - 本番環境では自身のマニフェストURLに変更
+## デプロイのためのセットアップ
 
-3. コントラクトメソッド名
-   - 正しいメソッド名（`get_contract_storage_data`）を使用していることを確認
-   - メソッド名の変更時はデバッグログで動作を確認
+### 1. vite.config.tsの設定
+
+GitHub Pagesでの公開に必要な設定を追加します：
+
+```typescript
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { nodePolyfills } from 'vite-plugin-node-polyfills'
+
+export default defineConfig({
+  plugins: [
+    react(),
+    nodePolyfills()
+  ],
+  build: {
+    outDir: 'docs'  // GitHub Pagesはdocsディレクトリを自動的に認識します
+  },
+  base: '/my-ton-re-5/',  // リポジトリ名をベースパスとして設定
+  server: {
+    fs: {
+      allow: ['./', '../'],
+    },
+    host: true,
+    allowedHosts: [
+      'localhost',
+      '.ngrok-free.app',
+      '*.ngrok-free.app'
+    ]
+  }
+})
+```
+
+### 2. TypeScript設定の修正
+
+TypeScriptの設定ファイルで発生する問題を解決するための設定：
+
+#### tsconfig.node.json
+
+```json
+{
+  "compilerOptions": {
+    "composite": true,
+    "skipLibCheck": true,
+    "module": "ESNext",
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "strict": true
+  },
+  "include": ["vite.config.ts"]
+}
+```
+
+#### tsconfig.app.json
+
+```json
+{
+  "compilerOptions": {
+    "target": "ES2020",
+    "useDefineForClassFields": true,
+    "lib": ["ES2020", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "skipLibCheck": true,
+    "moduleResolution": "node",
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "noEmit": true,
+    "jsx": "react-jsx",
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src"],
+  "references": [{ "path": "./tsconfig.node.json" }]
+}
+```
+
+### 3. マニフェストファイルの設定
+
+TON Connectで必要なマニフェストファイルを正しく設定します：
+
+#### public/tonconnect-manifest.json（GitHub Pages用）
+
+```json
+{
+  "url": "https://masashi-ono0611.github.io/my-ton-re-5/",
+  "name": "TON Counter Tutorial",
+  "iconUrl": "https://raw.githubusercontent.com/markokhman/func-course-chapter-5-code/master/public/tonco.png"
+}
+```
+
+#### public/manifest.json（ローカル開発用）
+
+```json
+{
+  "url": "http://10.100.101.80:5173",
+  "name": "TON Counter Tutorial",
+  "iconUrl": "https://raw.githubusercontent.com/markokhman/func-course-chapter-5-code/master/public/tonco.png"
+}
+```
+
+### 4. マニフェストURLの設定
+
+ローカル開発とGitHub Pagesデプロイで異なるURLを使用する必要があります：
+
+#### src/main.tsx（GitHub Pages用）
+
+```typescript
+// GitHub Pagesデプロイに合わせたマニフェストURL
+const manifestUrl = '/my-ton-re-5/tonconnect-manifest.json';
+```
+
+#### src/main.tsx（ローカル開発用）
+
+```typescript
+// ローカル開発環境用マニフェストURL
+const manifestUrl = '/manifest.json';
+```
+
+## デプロイ手順
+
+### 1. ビルドスクリプトの修正
+
+TypeScriptのビルドエラーを回避するために、package.jsonのビルドスクリプトを修正します：
+
+```json
+"scripts": {
+  "dev": "vite --host --force",
+  "build": "vite build",  // tsc -b を削除
+  "lint": "eslint .",
+  "preview": "vite preview"
+}
+```
+
+### 2. ビルドの実行
+
+```bash
+npm run build
+```
+
+ビルドが成功すると、`docs`ディレクトリに以下のファイルが生成されます：
+- index.html
+- assets/（JavaScriptとCSSファイル）
+- manifest.json
+- tonconnect-manifest.json
+
+### 3. GitHub Actionsの設定
+
+`.github/workflows/deploy.yml`ファイルを作成して自動デプロイを設定：
+
+```yaml
+name: Deploy
+
+on:
+  push:
+    branches:
+      - main
+      - feature/5_5
+
+permissions:
+  contents: write
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v3
+
+      - name: Setup Node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+
+      - name: Install dependencies
+        run: npm install --legacy-peer-deps
+
+      - name: Build project
+        run: npm run build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs
+          force_orphan: true 
+```
+
+## 直面したエラーと解決策
+
+### 1. TypeScriptビルドエラー
+
+#### 問題
+- TypeScriptの設定ファイルでエラーが発生
+- `tsconfig.node.json`と`tsconfig.app.json`の互換性問題
+
+#### 原因
+- 新しいTypeScriptの機能を使用しているが、設定がサポートされていない
+- `moduleResolution: "bundler"`などの新しい設定オプションがエラーになる
+
+#### 解決策
+- TypeScript設定を簡素化し、互換性のある設定に変更
+- `moduleResolution: "node"`に変更
+- 問題のある設定オプションを削除
+
+### 2. マニフェストURL参照エラー
+
+#### 問題
+- デプロイ後、アプリケーションが真っ白な画面だけを表示
+- TON Connectが正しく動作しない
+
+#### 原因
+- ローカル開発環境とGitHub Pages環境でのパス参照の違い
+- ベースパスが`/my-ton-re-5/`に設定されているのに、マニフェストURLが対応していない
+
+#### 解決策
+- GitHub Pages用のマニフェストURLを`/my-ton-re-5/tonconnect-manifest.json`に修正
+- 環境に合わせたマニフェストファイルの内容を調整
+
+### 3. 開発サーバーポート変更への対応
+
+#### 問題
+- 開発サーバーが異なるポートで起動する場合がある
+- マニフェストファイルのURLが固定されているとエラーになる
+
+#### 原因
+- ポート番号が既に使用されていると、Viteは自動的に次のポートを試す
+- これにより、設定されたURLとは異なるポートでサーバーが起動する
+
+#### 解決策
+- サーバー起動時に表示されるポート番号を確認
+- マニフェストファイルのURLを実際のポート番号に更新
+
+### 4. vite-plugin-node-polyfillsの設定エラー
+
+#### 問題
+- `nodePolyfills`の設定でTypeScriptエラーが発生
+
+#### 原因
+- ライブラリの型定義とvite.config.tsでの使用方法の不一致
+
+#### 解決策
+- 設定を簡素化し、オプションを省略
+```typescript
+nodePolyfills() // オプションなしで使用
+```
+
+## 確認手順
+
+デプロイが成功したら、以下のURLでアプリケーションが正しく動作するか確認してください：
+`https://masashi-ono0611.github.io/my-ton-re-5/`
+
+TON Connectボタンをクリックし、ウォレット接続が機能するか、また各操作（カウンターの増加、入金、出金）が正しく動作するかをテストしてください。
+
+# TON Connectバージョン更新ガイド
+
+## TON Connectの更新が必要な理由
+
+TON Connectライブラリは活発に開発が進められており、バージョン間で互換性の問題が発生することがあります。特に古いベータ版から最新のリリース版へのアップグレードでは、APIの変更や機能の追加などが行われています。
+
+### バージョン比較
+
+**旧バージョン**:
+```json
+"@tonconnect/ui-react": "^1.0.0-beta.9"
+```
+
+**新バージョン**:
+```json
+"@tonconnect/ui-react": "^2.0.11"
+```
+
+## 更新手順
+
+### 1. パッケージの更新
+
+`package.json`ファイルを編集してTON Connectのバージョンを更新します：
+
+```json
+{
+  "dependencies": {
+    "@tonconnect/ui-react": "^2.0.11"
+    // その他の依存関係は変更しない
+  }
+}
+```
+
+### 2. 依存関係のクリーンインストール
+
+```bash
+rm -rf node_modules package-lock.json
+npm install --legacy-peer-deps
+```
+
+### 3. useTonConnect Hookの実装
+
+新しいバージョンのTON Connectでは、APIが変更されています。以下のような`useTonConnect`フックを作成して対応します：
+
+```typescript
+// src/hooks/useTonConnect.ts
+import { useTonConnectUI } from '@tonconnect/ui-react';
+import { Sender, SenderArguments } from 'ton-core';
+
+export function useTonConnect(): { sender: Sender; connected: boolean } {
+  const [tonConnectUI] = useTonConnectUI();
+
+  return {
+    sender: {
+      send: async (args: SenderArguments) => {
+        tonConnectUI.sendTransaction({
+          messages: [
+            {
+              address: args.to.toString(),
+              amount: args.value.toString(),
+              payload: args.body?.toBoc().toString('base64'),
+            },
+          ],
+          validUntil: Date.now() + 5 * 60 * 1000, // 5 minutes for user to approve
+        });
+      },
+    },
+    connected: tonConnectUI.connected,
+  };
+}
+```
+
+### 4. マニフェストURL設定の確認
+
+`main.tsx`ファイルでのマニフェストURL設定を確認します：
+
+```typescript
+// ローカル開発環境の場合
+const manifestUrl = '/manifest.json';
+
+// または外部マニフェストを使用する場合
+// const manifestUrl = 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json';
+```
+
+## 注意点と問題の回避策
+
+### 1. APIの変更に対応
+
+TON Connectの新しいバージョンでは、API設計が変更されている場合があります。特に以下の点に注意してください：
+
+- `useTonConnectUI`フックの使用方法
+- トランザクション送信のインターフェイス
+- ウォレット接続状態の取得方法
+
+### 2. 型定義の変更
+
+TypeScriptの型定義が更新されている場合があります。特に以下の型にエラーがないか確認してください：
+
+- `Sender`インターフェイス
+- トランザクションメッセージの形式
+- ペイロードのエンコード方法
+
+### 3. バージョンミスマッチの回避
+
+関連するTON Connectパッケージ間でバージョンの互換性を確保するため、以下のパッケージが自動的にインストールされることを確認してください：
+
+- `@tonconnect/sdk`
+- `@tonconnect/ui`
+- `@tonconnect/protocol`
+
+これらは`@tonconnect/ui-react`の依存関係として適切なバージョンがインストールされます。
