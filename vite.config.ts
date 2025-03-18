@@ -10,7 +10,7 @@ export default defineConfig({
       include: ['crypto', 'stream', 'buffer']
     })
   ],
-  base: './',
+  base: '/my-ton-re-5/',
   server: {
     fs: {
       allow: ['./', '../'],
