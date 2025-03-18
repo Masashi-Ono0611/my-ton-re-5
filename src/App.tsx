@@ -3,6 +3,7 @@ import { TonConnectButton } from '@tonconnect/ui-react';
 import { useMainContract } from './hooks/useMainContract';
 import { useTonConnect } from './hooks/useTonConnect';
 import { useState } from 'react';
+import WebApp from '@twa-dev/sdk';
 
 function App() {
   const { value, balance, address, sendIncrement, sendDeposit, sendNoCodeDeposit, sendWithdrawal } = useMainContract();
@@ -10,11 +11,19 @@ function App() {
   const [incrementBy, setIncrementBy] = useState<number>(1);
   const [amount, setAmount] = useState<string>('0.1');
 
+  const showAlert = () => {
+    WebApp.showAlert("Hey there!");
+  };
+
   return (
     <div className='App'>
       <div className='Container'>
         <TonConnectButton />
         
+        <div className='Card'>
+          <b>Platform: {WebApp.platform}</b>
+        </div>
+
         <div className='Card'>
           <b>Counter Address</b>
           <div className='Hint'>{address}</div>
@@ -29,6 +38,10 @@ function App() {
           <b>Contract Balance</b>
           <div>{balance !== null ? `${balance} nanoTON` : 'Loading...'}</div>
         </div>
+
+        <a className='Button' onClick={showAlert}>
+          Show Alert
+        </a>
 
         {connected && (
           <div className='ActionGroup'>
