@@ -2,8 +2,24 @@ import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { nodePolyfills } from 'vite-plugin-node-polyfills'
 
-// https://vite.dev/config/
+// https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), nodePolyfills()],
-  base: '/',
+  plugins: [
+    react(),
+    nodePolyfills({
+      include: ['crypto', 'stream', 'buffer']
+    })
+  ],
+  base: './',
+  server: {
+    fs: {
+      allow: ['./', '../'],
+    },
+    host: true,
+    allowedHosts: [
+      'localhost',
+      '.ngrok-free.app',
+      '*.ngrok-free.app'
+    ]
+  }
 })
