@@ -15,11 +15,6 @@ export default defineConfig({
     fs: {
       allow: ['./', '../'],
     },
-    host: true,
-    allowedHosts: [
-      'localhost',
-      '.ngrok-free.app',
-      '*.ngrok-free.app'
-    ]
+    host: true
   }
 })

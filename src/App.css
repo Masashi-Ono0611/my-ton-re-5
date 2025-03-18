@@ -40,3 +40,16 @@
 .read-the-docs {
   color: #888;
 }
+
+.Card {
+  padding: 16px;
+  margin: 16px;
+  border: 1px solid #ccc;
+  border-radius: 8px;
+}
+
+.Hint {
+  color: #666;
+  font-size: 0.8em;
+  margin-top: 4px;
+}

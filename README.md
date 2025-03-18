@@ -135,11 +135,6 @@ ngrokが生成したURLを`public/manifest.json`の`url`フィールドに設定
 
 ## トラブルシューティング
 
-### ポートが使用中の場合
-
-開発サーバーは自動的に利用可能な次のポートを試します（5173, 5174, 5175...）。
-ngrokを起動する際は、実際に使用されているポート番号を指定してください。
-
 ### Blocked requestエラーが表示される場合
 
 vite.config.tsの`allowedHosts`に、使用するngrokのドメインが含まれていることを確認してください。
@@ -159,3 +154,111 @@ npm install --legacy-peer-deps
 - 開発サーバーのポート番号は環境によって変わる可能性があります
 - ngrokのURLは毎回変更されるため、新しいURLを`manifest.json`に反映する必要があります
 - 本番環境では、固定のURLを使用することを推奨します
+
+# TON DApp開発のトラブルシューティングガイド
+
+## 発生した問題と解決策
+
+### 1. コントラクトデータの取得エラー
+
+#### 問題
+- コントラクトのカウンター値が表示されず、`exit_code: 11`エラーが発生
+- エラーメッセージ: `Error fetching contract data: Error: Unable to execute get method`
+
+#### 原因
+- コントラクトのメソッド名が間違っていた
+  - 使用していた名前: `counter`
+  - 正しい名前: `get_contract_storage_data`
+
+#### 解決策
+1. `MainContract.ts`のメソッド名を修正
+```typescript
+async getData(provider: ContractProvider) {
+    try {
+        console.log("Calling get method 'get_contract_storage_data'...");
+        const { stack } = await provider.get("get_contract_storage_data", []);
+        // ... 以下省略
+    } catch (error) {
+        console.error("Error in getData:", error);
+        throw error;
+    }
+}
+```
+
+2. デバッグログの追加
+- コントラクトの初期化
+- データ取得プロセス
+- エラーハンドリング
+
+### 2. WalletConnect接続エラー
+
+#### 問題
+- WalletConnectボタンクリック時にHTMLドキュメントが返される
+- JavaScriptの有効化を促すメッセージが表示
+
+#### 原因
+- マニフェストURLの設定が不適切
+  - ローカルの`manifest.json`を使用していた
+  - 正しい設定: 公式の外部マニフェストURLを使用する必要がある
+
+#### 解決策
+1. `main.tsx`のマニフェストURL設定を変更
+```typescript
+// 変更前
+const manifestUrl = '/manifest.json';
+
+// 変更後
+const manifestUrl = 'https://raw.githubusercontent.com/ton-community/tutorials/main/03-client/test/public/tonconnect-manifest.json';
+```
+
+### 3. その他の改善点
+
+#### デバッグ機能の強化
+1. TONクライアントの初期化ログ追加
+```typescript
+console.log("Initializing TON client...");
+console.log("Using endpoint:", endpoint);
+console.log("TON client initialized successfully");
+```
+
+2. コントラクト操作のエラーハンドリング
+```typescript
+try {
+    // 操作の実行
+} catch (error) {
+    console.error("Error details:", error);
+}
+```
+
+## 開発環境のセットアップ
+
+### 必要な依存関係
+```json
+{
+  "dependencies": {
+    "@orbs-network/ton-access": "^2.3.3",
+    "@tonconnect/ui-react": "^1.0.0-beta.9",
+    "ton": "^13.5.0",
+    "ton-core": "^0.49.1",
+    "ton-crypto": "^3.2.0"
+  }
+}
+```
+
+### 開発サーバーの起動
+```bash
+npm run dev -- --host
+```
+
+### 注意点
+1. ポート番号の確認
+   - デフォルト: 5173
+   - 使用中の場合: 5174などの別ポートを使用
+
+2. マニフェストURLの設定
+   - 開発時は公式の外部マニフェストURLを使用することを推奨
+   - 本番環境では自身のマニフェストURLに変更
+
+3. コントラクトメソッド名
+   - 正しいメソッド名（`get_contract_storage_data`）を使用していることを確認
+   - メソッド名の変更時はデバッグログで動作を確認
