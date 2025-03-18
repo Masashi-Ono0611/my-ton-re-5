@@ -5,7 +5,7 @@ import './index.css';
 import { TonConnectUIProvider } from '@tonconnect/ui-react';
 
 // ngrok用のマニフェストURL
-const manifestUrl = 'https://c8e0-115-135-26-178.ngrok-free.app/tonconnect-manifest.json';
+const manifestUrl = 'https://6312-115-135-26-178.ngrok-free.app/tonconnect-manifest.json';
 
 ReactDOM.createRoot(document.getElementById('root') as HTMLElement).render(
   <React.StrictMode>
