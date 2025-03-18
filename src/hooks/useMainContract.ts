@@ -8,6 +8,7 @@ import { useAsyncInitialize } from "./useAsyncInitialize";
 export function useMainContract() {
   const client = useTonClient();
   const [val, setVal] = useState<number | null>();
+  const [balance, setBalance] = useState<number | null>();
   const { sender } = useTonConnect();
   
   const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
@@ -31,6 +32,8 @@ export function useMainContract() {
         const data = await mainContract.getData();
         console.log("Contract data:", data);
         setVal(Number(data.number));
+        const balanceData = await mainContract.getBalance();
+        setBalance(Number(balanceData.number));
         await sleep(5000);
         getValue();
       } catch (error) {
@@ -44,9 +47,19 @@ export function useMainContract() {
 
   return {
     value: val,
+    balance: balance,
     address: mainContract?.address.toString(),
-    sendIncrement: () => {
-      return mainContract?.sendIncrement(sender, toNano('0.05'), 1);
+    sendIncrement: (incrementBy: number = 1) => {
+      return mainContract?.sendIncrement(sender, toNano('0.05'), incrementBy);
+    },
+    sendDeposit: (amount: string) => {
+      return mainContract?.sendDeposit(sender, toNano(amount));
+    },
+    sendNoCodeDeposit: (amount: string) => {
+      return mainContract?.sendNoCodeDeposit(sender, toNano(amount));
+    },
+    sendWithdrawal: (amount: string) => {
+      return mainContract?.sendWithdrawalRequest(sender, toNano('0.05'), toNano(amount));
     },
   };
 } 

@@ -41,15 +41,101 @@
   color: #888;
 }
 
+.Container {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 20px;
+}
+
 .Card {
-  padding: 16px;
-  margin: 16px;
-  border: 1px solid #ccc;
+  width: 90%;
+  max-width: 500px;
+  background-color: var(--card-bg, #fff);
+  color: var(--text-color, #000);
   border-radius: 8px;
+  padding: 20px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
 }
 
 .Hint {
-  color: #666;
+  color: var(--hint-color, #666);
   font-size: 0.8em;
-  margin-top: 4px;
+  margin-top: 5px;
+  word-break: break-all;
+}
+
+.Button {
+  display: inline-block;
+  background-color: #0088cc;
+  color: white;
+  padding: 10px 20px;
+  border-radius: 4px;
+  cursor: pointer;
+  text-decoration: none;
+  margin: 5px;
+  transition: background-color 0.3s ease;
+}
+
+.Button:hover {
+  background-color: #006699;
+}
+
+.ActionGroup {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 20px;
+}
+
+.Actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 10px;
+  align-items: center;
+}
+
+input {
+  padding: 8px;
+  border: 1px solid var(--input-border, #ddd);
+  background-color: var(--input-bg, #fff);
+  color: var(--text-color, #000);
+  border-radius: 4px;
+  width: 100px;
+  margin-right: 10px;
+}
+
+input:focus {
+  outline: none;
+  border-color: #0088cc;
+}
+
+/* ダークモード対応 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --card-bg: #2a2a2a;
+    --text-color: #fff;
+    --hint-color: #aaa;
+    --input-border: #444;
+    --input-bg: #333;
+  }
+
+  .Card {
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+  }
+
+  input::placeholder {
+    color: #666;
+  }
+
+  /* 数値入力の矢印の色を調整 */
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    filter: invert(1);
+  }
 }
