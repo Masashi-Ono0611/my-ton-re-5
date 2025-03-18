@@ -1,4 +1,4 @@
-import { Cell, beginCell, Dictionary } from "@ton/ton";
+import { Cell } from "ton-core";
 
 export function decodeOffChainContent(content: Cell): string {
   let data = content.beginParse();

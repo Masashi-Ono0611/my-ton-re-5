@@ -5,15 +5,21 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
     plugins: [
         react(),
-        nodePolyfills({
-            include: ['crypto', 'stream', 'buffer']
-        })
+        nodePolyfills()
     ],
-    base: './',
+    build: {
+        outDir: 'docs'
+    },
+    base: '/my-ton-re-5/',
     server: {
         fs: {
-            allow: ['./', '../'],
+            allow: ['./', '../']
         },
-        host: true
+        host: true,
+        allowedHosts: [
+            'localhost',
+            '.ngrok-free.app',
+            '*.ngrok-free.app'
+        ]
     }
 });

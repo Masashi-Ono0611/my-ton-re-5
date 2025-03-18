@@ -6,13 +6,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills'
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills({
-      globals: {
-        Buffer: true,
-        global: true,
-        process: true
-      }
-    })
+    nodePolyfills()
   ],
   build: {
     outDir: 'docs'
