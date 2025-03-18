@@ -1,65 +1,52 @@
 import { useEffect, useState } from "react";
-import MainContract from "../contracts/MainContract";
+import { Address, toNano } from "ton-core";
+import { MainContract } from "../contracts/MainContract";
 import { useTonClient } from "./useTonClient";
+import { useTonConnect } from "./useTonConnect";
 import { useAsyncInitialize } from "./useAsyncInitialize";
-import { Address, OpenedContract } from "ton-core";
 
 export function useMainContract() {
   const client = useTonClient();
-  const [contractData, setContractData] = useState<null | {
-    counter_value: number;
-    recent_sender: Address;
-    owner_address: Address;
-  }>();
+  const [val, setVal] = useState<number | null>();
+  const { sender } = useTonConnect();
+  
+  const sleep = (time: number) => new Promise((resolve) => setTimeout(resolve, time));
 
   const mainContract = useAsyncInitialize(async () => {
-    try {
-      if (!client) {
-        console.log("Waiting for TonClient initialization...");
-        return null;
-      }
-      console.log("Initializing contract...");
-      const contract = new MainContract(
-        Address.parse("kQDLFbb5Iv_U47ooUfPUvbW_d_UcCHhd8ZEoeETUu0RVrrbP")
-      );
-      console.log("Contract address:", contract.address.toString());
-      return client.open(contract) as OpenedContract<MainContract>;
-    } catch (error) {
-      console.error("Error initializing contract:", error);
-      return null;
-    }
+    if (!client) return;
+    console.log("Initializing contract...");
+    const contract = new MainContract(
+      Address.parse("EQDLFbb5Iv_U47ooUfPUvbW_d_UcCHhd8ZEoeETUu0RVrg1F")
+    );
+    console.log("Contract address:", contract.address.toString());
+    return client.open(contract);
   }, [client]);
 
-  async function getValue() {
-    try {
-      if (!mainContract) {
-        console.log("Waiting for contract initialization...");
-        return;
-      }
-      console.log("Getting contract data...");
-      setContractData(null);
-      const val = await mainContract.getData();
-      console.log("Contract data received:", {
-        counter_value: val.number,
-        recent_sender: val.recent_sender?.toString(),
-        owner_address: val.owner_address?.toString()
-      });
-      setContractData({
-        counter_value: val.number,
-        recent_sender: val.recent_sender,
-        owner_address: val.owner_address,
-      });
-    } catch (error) {
-      console.error("Error getting contract data:", error);
-    }
-  }
-
   useEffect(() => {
+    async function getValue() {
+      if (!mainContract) return;
+      console.log("Fetching contract data...");
+      setVal(null);
+      try {
+        const data = await mainContract.getData();
+        console.log("Contract data:", data);
+        setVal(Number(data.number));
+        await sleep(5000);
+        getValue();
+      } catch (error) {
+        console.error("Error fetching contract data:", error);
+        await sleep(5000);
+        getValue();
+      }
+    }
     getValue();
   }, [mainContract]);
 
   return {
-    contract_address: mainContract?.address.toString(),
-    ...contractData,
+    value: val,
+    address: mainContract?.address.toString(),
+    sendIncrement: () => {
+      return mainContract?.sendIncrement(sender, toNano('0.05'), 1);
+    },
   };
 } 

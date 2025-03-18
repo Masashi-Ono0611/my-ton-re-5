@@ -1,44 +1,73 @@
-import { Contract, ContractProvider, Address, Cell } from "ton-core";
+import { Address, beginCell, Cell, Contract, contractAddress, ContractProvider, Sender, SendMode } from 'ton-core';
 
-export default class MainContract implements Contract {
-    constructor(
-        readonly address: Address,
-        readonly init?: { code: Cell; data: Cell }
-    ) {}
+export type MainContractConfig = {
+  number: number;
+  address: Address;
+  owner_address: Address;
+};
 
-    async getData(provider: ContractProvider) {
-        try {
-            console.log("Calling get method 'get_contract_storage_data'...");
-            const { stack } = await provider.get("get_contract_storage_data", []);
-            console.log("Stack received:", stack);
-            
-            const number = stack.readNumber();
-            console.log("Counter value:", number);
-            
-            const owner_address = stack.readAddress();
-            console.log("Owner address:", owner_address.toString());
-            
-            const recent_sender = stack.readAddress();
-            console.log("Recent sender:", recent_sender.toString());
+export function mainContractConfigToCell(config: MainContractConfig): Cell {
+  return beginCell()
+    .storeUint(config.number, 32)
+    .storeAddress(config.address)
+    .storeAddress(config.owner_address)
+    .endCell();
+}
 
-            return {
-                number,
-                owner_address,
-                recent_sender,
-            };
-        } catch (error) {
-            console.error("Error in getData:", error);
-            throw error;
-        }
-    }
+export class MainContract implements Contract {
+  constructor(
+    readonly address: Address,
+    readonly init?: { code: Cell; data: Cell }
+  ) {}
 
-    async getCounter(provider: ContractProvider) {
-        try {
-            const { stack } = await provider.get("get_contract_storage_data", []);
-            return stack.readNumber();
-        } catch (error) {
-            console.error("Error in getCounter:", error);
-            throw error;
-        }
-    }
+  static createFromConfig(
+    config: MainContractConfig,
+    code: Cell,
+    workchain = 0
+  ) {
+    const data = mainContractConfigToCell(config);
+    const init = { code, data };
+    const address = contractAddress(workchain, init);
+    return new MainContract(address, init);
+  }
+
+  async sendDeploy(provider: ContractProvider, via: Sender, value: bigint) {
+    await provider.internal(via, {
+      value,
+      sendMode: SendMode.PAY_GAS_SEPARATELY,
+      body: beginCell().endCell(),
+    });
+  }
+
+  async sendIncrement(
+    provider: ContractProvider,
+    sender: Sender,
+    value: bigint,
+    increment_by: number
+  ) {
+    const msg_body = beginCell()
+      .storeUint(1, 32) // OP code
+      .storeUint(increment_by, 32) // increment_by value
+      .endCell();
+
+    await provider.internal(sender, {
+      value,
+      sendMode: SendMode.PAY_GAS_SEPARATELY,
+      body: msg_body,
+    });
+  }
+
+  async getData(provider: ContractProvider) {
+    const { stack } = await provider.get("get_contract_storage_data", []);
+    return {
+      number: stack.readNumber(),
+      recent_sender: stack.readAddress(),
+      owner_address: stack.readAddress(),
+    };
+  }
+
+  async getCounter(provider: ContractProvider) {
+    const { stack } = await provider.get("get_contract_storage_data", []);
+    return stack.readNumber();
+  }
 } 
