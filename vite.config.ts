@@ -8,6 +8,9 @@ export default defineConfig({
     react(),
     nodePolyfills()
   ],
+  build: {
+    outDir: 'docs'
+  },
   base: '/my-ton-re-5/',
   server: {
     fs: {
