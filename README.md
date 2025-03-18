@@ -81,9 +81,7 @@ import { nodePolyfills } from 'vite-plugin-node-polyfills';
 export default defineConfig({
   plugins: [
     react(),
-    nodePolyfills({
-      include: ['crypto', 'stream', 'buffer']
-    })
+    nodePolyfills()
   ],
   base: './',
   server: {
@@ -100,60 +98,85 @@ export default defineConfig({
 });
 ```
 
-#### public/manifest.json
+## ngrokを使用した開発環境の設定
+
+### 1. ngrokのセットアップ
+
+```bash
+# Homebrewを使用してngrokをインストール
+brew install ngrok
+
+# または、公式サイトからダウンロード
+# https://ngrok.com/download
+```
+
+### 2. 開発サーバーの起動
+
+```bash
+# 開発サーバーを起動（--hostフラグで外部アクセスを許可）
+npm run dev -- --host
+```
+
+### 3. ngrokトンネルの設定
+
+```bash
+# 新しいターミナルウィンドウで実行
+ngrok http 5173
+```
+
+### 4. マニフェストファイルの設定
+
+ngrokが生成したURLを使用して、以下のファイルを更新します：
+
+#### public/tonconnect-manifest.json
 
 ```json
 {
-  "url": "https://[your-ngrok-url]",
+  "url": "https://あなたのngrokURL",
   "name": "TON Counter Tutorial",
   "iconUrl": "https://raw.githubusercontent.com/markokhman/func-course-chapter-5-code/master/public/tonco.png"
 }
 ```
 
-### 3. 開発サーバーの起動
+#### src/main.tsx
 
-```bash
-# 開発サーバーを起動
-npm run dev
+```typescript
+// ngrok用のマニフェストURL
+const manifestUrl = 'https://あなたのngrokURL/tonconnect-manifest.json';
 ```
 
-### 4. ngrokの設定
+### 5. 動作確認
 
-別のターミナルウィンドウで以下を実行：
+1. ngrokが生成したURLにアクセス
+2. 「Connect Wallet」ボタンをクリック
+3. TON Walletとの接続を確認
+4. デポジットや引き出し機能をテスト
 
-```bash
-# ngrokをインストール（まだインストールしていない場合）
-brew install ngrok
+### 注意事項
 
-# ngrokを起動（ポート番号は開発サーバーの出力に合わせて調整）
-ngrok http 5173  # または表示されているポート番号
-```
-
-### 5. manifest.jsonの更新
-
-ngrokが生成したURLを`public/manifest.json`の`url`フィールドに設定します。
+- ngrokの無料プランでは、URLは起動するたびに変更されます
+- URLが変更された場合は、manifest.jsonとmain.tsxの両方を更新する必要があります
+- 本番環境では、固定のURLを使用することを推奨します
 
 ## トラブルシューティング
 
-### Blocked requestエラーが表示される場合
+### CORS関連のエラーが発生する場合
 
-vite.config.tsの`allowedHosts`に、使用するngrokのドメインが含まれていることを確認してください。
-デフォルトで`.ngrok-free.app`と`*.ngrok-free.app`が許可されています。
+vite.config.tsの`allowedHosts`に、ngrokのドメインが含まれていることを確認：
 
-### 依存関係の競合が発生する場合
-
-```bash
-rm -rf node_modules package-lock.json
-npm install --legacy-peer-deps
+```typescript
+allowedHosts: [
+  'localhost',
+  '.ngrok-free.app',
+  '*.ngrok-free.app'
+]
 ```
 
-を実行して、依存関係を再インストールしてください。
+### マニフェストが見つからないエラー
 
-## 注意事項
-
-- 開発サーバーのポート番号は環境によって変わる可能性があります
-- ngrokのURLは毎回変更されるため、新しいURLを`manifest.json`に反映する必要があります
-- 本番環境では、固定のURLを使用することを推奨します
+1. ngrokのURLが正しく設定されているか確認
+2. マニフェストファイルのパスが正しいか確認
+3. 開発サーバーが正常に起動しているか確認
 
 # TON DApp開発のトラブルシューティングガイド
 
